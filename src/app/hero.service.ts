@@ -4,6 +4,7 @@ import { Hero } from "./hero";
 import { Observable, of } from "rxjs";
 import { MessageService } from "./message.service";
 import { catchError, map, tap } from "rxjs/operators";
+import { trimTrailingNulls } from "@angular/compiler/src/render3/view/util";
 
 @Injectable({
   providedIn: "root"
@@ -56,6 +57,23 @@ export class HeroService {
       tap(_ => this.log(`deleted hero id= ${id}`)),
       catchError(this.handleErrors<Hero>("deleteHero"))
     );
+  }
+
+  searchHeroes(term: string): Observable<Hero[]> {
+    if (!term.trim()) {
+      return of([]);
+    }
+    return this.http
+      .get<Hero[]>(`${this.heroesUrl}/?name=${term}`)
+      .pipe(
+        tap(
+          x =>
+            x.length
+              ? this.log(`found heroes matching "${term}"`)
+              : this.log(`no heroes matching "${term}"`),
+          catchError(this.handleErrors<Hero[]>("searchHeroes", []))
+        )
+      );
   }
 
   private handleErrors<T>(operation = "operation", result?: T) {
